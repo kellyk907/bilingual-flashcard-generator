@@ -1,10 +1,10 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
 }
-body {
-  font-family: Arial, sans-serif;
-  background: linear-gradient(to bottom right, #dbeafe, #e9d5ff);
-  min-height: 100vh;
+.backface-hidden {
+  backface-visibility: hidden;
 }
