@@ -25,21 +25,31 @@ export default function App() {
   const [inputEn, setInputEn] = useState('');
   const [inputTarget, setInputTarget] = useState('');
   const [flipped, setFlipped] = useState({});
+  const [error, setError] = useState(null);
   const currentLang = i18n.language === 'zh' ? 'zh' : 'es';
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(`flashcards_${currentLang}`);
-    if (saved) {
-      setFlashcards(JSON.parse(saved));
-    } else {
+    try {
+      const saved = localStorage.getItem(`flashcards_${currentLang}`);
+      if (saved) {
+        setFlashcards(JSON.parse(saved));
+      } else {
+        setFlashcards(SAMPLE_DATA[currentLang]);
+      }
+    } catch (err) {
+      console.error('Load error:', err);
       setFlashcards(SAMPLE_DATA[currentLang]);
     }
   }, [currentLang]);
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem(`flashcards_${currentLang}`, JSON.stringify(flashcards));
+    try {
+      localStorage.setItem(`flashcards_${currentLang}`, JSON.stringify(flashcards));
+    } catch (err) {
+      console.error('Save error:', err);
+    }
   }, [flashcards, currentLang]);
 
   const addCard = () => {
@@ -55,12 +65,18 @@ export default function App() {
   };
 
   const clearAll = () => {
-    setFlashcards([]);
+    if (window.confirm('Clear all cards?')) {
+      setFlashcards([]);
+    }
   };
 
   const toggleFlip = (index) => {
     setFlipped(prev => ({ ...prev, [index]: !prev[index] }));
   };
+
+  if (error) {
+    return <div className="text-center p-8 text-red-600">Error: {error}. Refresh to retry.</div>;
+  }
 
   return (
     <div className="min-h-screen p-4">
@@ -77,7 +93,7 @@ export default function App() {
             onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
             className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition"
           >
-            {i18n.language === 'zh' ? 'Español' : '中文'}
+            {i18n.language === 'zh' ? '🇪🇸 Español' : '🇨🇳 中文'}
           </button>
         </div>
 
@@ -119,19 +135,25 @@ export default function App() {
                 key={i}
                 className="relative h-48 cursor-pointer group"
                 onClick={() => toggleFlip(i)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && toggleFlip(i)}
               >
-                <div className={`absolute inset-0 w-full h-full transition-all duration-500 transform-gpu ${flipped[i] ? 'rotate-y-180' : ''}`} style={{ transformStyle: 'preserve-3d' }}>
+                <div 
+                  className={`absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out ${flipped[i] ? 'rotate-y-180' : ''}`} 
+                  style={{ transformStyle: 'preserve-3d' }}
+                >
                   {/* Front */}
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-lg flex flex-col items-center justify-center p-4 backface-hidden">
-                    <p className="text-2xl font-bold">{card.en}</p>
+                    <p className="text-2xl font-bold text-center">{card.en}</p>
                     <p className="text-sm mt-2 opacity-75">Click to flip</p>
                   </div>
                   {/* Back */}
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 text-white rounded-2xl shadow-lg flex flex-col items-center justify-center p-4 rotate-y-180 backface-hidden">
-                    <p className="text-2xl font-bold" dir={currentLang === 'zh' ? 'ltr' : 'auto'}>{card.target}</p>
+                    <p className="text-2xl font-bold text-center" dir={currentLang === 'zh' ? 'ltr' : 'auto'}>{card.target}</p>
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteCard(i); }}
-                      className="mt-4 px-4 py-1 bg-red-600 rounded-full text-sm hover:bg-red-700"
+                      className="mt-4 px-4 py-1 bg-red-600 rounded-full text-sm hover:bg-red-700 transition"
                     >
                       {t('delete')}
                     </button>
@@ -157,11 +179,6 @@ export default function App() {
           Built by Kelly Kroeper, MPH | React + Tailwind | <a href="https://kellyk907.github.io/portfolio/" className="underline">Portfolio</a>
         </p>
       </div>
-
-      <style jsx>{`
-        .rotate-y-180 { transform: rotateY(180deg); }
-        .backface-hidden { backface-visibility: hidden; }
-      `}</style>
     </div>
   );
 }
