@@ -2,14 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-/* Flip Animation Fixes */
+/* Flip Animation */
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
 .backface-hidden {
   backface-visibility: hidden;
+}
+[style*="transformStyle"] {
+  transform-style: preserve-3d;
+}
+
+/* Basic fallback */
+* {
+  box-sizing: border-box;
 }
