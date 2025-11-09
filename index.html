@@ -1,178 +1,513 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<header>
-  <h1>CSV → Branded PDF Engine</h1>
-  <p>Upload data. Download client-ready PDFs. No design team needed.</p>
-</header>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSV → Branded PDF Engine</title>
+
+  <!-- Premium Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Satoshi:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+
+  <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
- <style>
-  @import url('https://rsms.me/inter/inter.css');
-  :root {
-    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --bg: #f8fafc;
-    --card: #ffffff;
-    --text: #0f172a;
-    --text-light: #64748b;
-    --primary: #4f46e5;     /* Indigo */
-    --accent: #10b981;      /* Emerald */
-    --border: #e2e8f0;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Satoshi:wght@500;700;900&display=swap');
+    @import url('https://rsms.me/inter/inter.css');
+
+    :root {
+      --font-heading: 'Satoshi', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --bg: #0f0f1a;
+      --card: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.15);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #f59e0b;     /* Gold */
+      --accent: #10b981;      /* Emerald */
+      --border: rgba(255, 255, 255, 0.12);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-family: var(--font-body); scroll-behavior: smooth; }
+    body {
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: rgba(15, 15, 26, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 3rem 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(245, 158, 11, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    header h1 {
+      font-family: var(--font-heading);
+      font-size: 2.8rem;
+      font-weight: 900;
+      margin: 0;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -1px;
+    }
+
+    header p {
+      margin: 1rem 0 0;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    main { padding: 3rem 2.5rem; }
+
+    .uploader {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 3.5rem 2rem;
+      text-align: center;
+      background: var(--card);
+      backdrop-filter: blur(8px);
+      transition: var(--transition);
+      cursor: pointer;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .uploader:hover, .uploader.dragover {
+      border-color: var(--primary);
+      background: var(--card-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(245, 158, 11, 0.2);
+    }
+
+    .uploader p {
+      font-weight: 700;
+      font-size: 1.3rem;
+      margin: 0.5rem 0;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .uploader small {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    input[type="file"] {
+      display: block;
+      margin: 1.5rem auto;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1rem;
+      width: 100%;
+      max-width: 500px;
+      transition: var(--transition);
+    }
+
+    input[type="file"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+    }
+
+    .logo-upload {
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .logo-upload label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .logo-preview {
+      max-width: 120px;
+      margin: 1rem auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .manual {
+      background: var(--card);
+      padding: 2.5rem;
+      border-radius: var(--radius);
+      backdrop-filter: blur(8px);
+      text-align: center;
+      margin: 2.5rem 0;
+      border: 1px solid var(--border);
+    }
+
+    .manual input {
+      width: 100%;
+      max-width: 400px;
+      padding: 1rem 1.2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1rem;
+      margin: 0.75rem 0;
+      transition: var(--transition);
+    }
+
+    .manual input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+    }
+
+    .manual button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-family: var(--font-heading);
+      cursor: pointer;
+      margin: 0.75rem;
+      transition: var(--transition);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 0.95rem;
+    }
+
+    .manual button:hover {
+      background: #d97706;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .manual button:nth-child(2) {
+      background: var(--accent);
+    }
+
+    .manual button:nth-child(2):hover {
+      background: #059669;
+    }
+
+    #flashcards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 2rem;
+      margin: 3rem 0;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 2rem;
+      border-radius: var(--radius);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 5px;
+      background: linear-gradient(90deg, var(--primary), #fbbf24);
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 16px 40px rgba(245, 158, 11, 0.25);
+      border-color: var(--primary);
+    }
+
+    .card h3 {
+      font-family: var(--font-heading);
+      margin: 0 0 0.75rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .card small {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      display: block;
+      margin-top: 0.75rem;
+    }
+
+    #download {
+      display: block;
+      width: fit-content;
+      margin: 3rem auto;
+      padding: 1.25rem 3rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      font-family: var(--font-heading);
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3);
+      transition: var(--transition);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    #download:hover {
+      background: #059669;
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(16, 185, 129, 0.4);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .dark-mode-toggle {
+      position: absolute;
+      top: 1.5rem;
+      right: 2.5rem;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--border);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .dark-mode-toggle:hover {
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>CSV → PDF Flashcard Engine</h1>
-      <p>Upload once. Print 1,000+ cards in seconds.</p>
+      <div class="dark-mode-toggle" onclick="toggleDarkMode()">Moon/Sun Icon</div>
+      <h1>CSV → Branded PDF Engine</h1>
+      <p>Upload data. Generate client-ready, print-optimized PDFs with your logo and branding — in seconds.</p>
     </header>
+
     <main>
-  <!-- CSV Uploader -->
-  <div id="uploader" class="uploader">
-    <p><strong>Drag & drop your CSV here</strong><br/>or</p>
-    <input type="file" id="csvFile" accept=".csv">
-    <small>Format: term,definition,language (optional, default: en)</small>
-  </div>
+      <div class="uploader" id="uploader">
+        <p>Drop your CSV here</p>
+        <input type="file" id="csvFile" accept=".csv">
+        <small>Columns: term, definition, language (optional)</small>
+      </div>
 
-  <!-- Manual Entry -->
-  <div class="manual">
-    <p>Or add manually:</p>
-    <input type="text" id="term" placeholder="Enter term">
-    <input type="text" id="definition" placeholder="Enter definition">
-    <input type="text" id="language" placeholder="Language (optional, e.g. es)" size="10">
-    <br>
-    <button onclick="addCard()">Add Card</button>
-    <button onclick="generatePDF()">Generate PDF</button>
-  </div>
+      <div class="logo-upload">
+        <label>Upload Your Logo (optional)</label>
+        <input type="file" id="logo" accept="image/*">
+        <img id="logoPreview" class="logo-preview" style="display:none;" />
+      </div>
 
-  <!-- Flashcards Display -->
-  <div id="flashcards"></div>
-  <button id="download" onclick="downloadPDF()" style="display: none;">Download PDF</button>
+      <div class="manual">
+        <input type="text" id="term" placeholder="Term">
+        <input type="text" id="definition" placeholder="Definition">
+        <input type="text" id="language" placeholder="Language (e.g. es)" size="10">
+        <br>
+        <button onclick="addCard()">Add Item</button>
+        <button onclick="generatePDF()">Generate PDF</button>
+      </div>
+
+      <div id="flashcards"></div>
+      <button id="download" onclick="generatePDF()" style="display:none;">Download PDF</button>
+    </main>
+
+    <footer>
+      Built by Kelly Kroeper • <a href="https://portfoliov2-brown-seven.vercel.app" style="color:var(--primary);text-decoration:none;">View Portfolio</a>
+    </footer>
+  </div>
 
   <script>
-    let flashcards = []; // Array of {term, definition, language}
+    let data = [];
+    let logoUrl = null;
 
-    // CSV Parse Function
+    // CSV Parser
     function parseCSV(text) {
       const rows = text.split('\n').slice(1).filter(r => r.trim());
-      return rows.map(row => {
-        const cols = row.split(',');
-        return {
-          term: cols[0]?.trim() || '',
-          definition: cols[1]?.trim() || '',
-          language: cols[2]?.trim() || 'en'
-        };
-      }).filter(card => card.term && card.definition);
+      return rows.map(r => {
+        const [term, def, lang = 'en'] = r.split(',').map(s => s.trim());
+        return { term, definition: def, language: lang };
+      }).filter(d => d.term && d.definition);
     }
 
-    // CSV Upload Handler
+    // Upload Handlers
     const uploader = document.getElementById('uploader');
     const csvFile = document.getElementById('csvFile');
+    const logoInput = document.getElementById('logo');
+    const logoPreview = document.getElementById('logoPreview');
 
-    csvFile.addEventListener('change', handleFile);
-    uploader.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploader.classList.add('dragover');
-    });
-    uploader.addEventListener('dragleave', () => uploader.classList.remove('dragover'));
-    uploader.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploader.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.csv')) handleFile({ target: { files: [file] } });
+    csvFile.addEventListener('change', e => handleFile(e, 'csv'));
+    logoInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          logoUrl = ev.target.result;
+          logoPreview.src = logoUrl;
+          logoPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
     });
 
-    function handleFile(e) {
+    function handleFile(e, type) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        const cards = parseCSV(ev.target.result);
-        flashcards = cards;
-        renderFlashcards();
-        alert(`Loaded ${cards.length} flashcards!`);
+      reader.onload = ev => {
+        if (type === 'csv') {
+          data = parseCSV(ev.target.result);
+          renderCards();
+          alert(`Loaded ${data.length} items!`);
+        }
       };
       reader.readAsText(file);
     }
 
+    ['dragover', 'dragenter'].forEach(evt => {
+      uploader.addEventListener(evt, e => {
+        e.preventDefault();
+        uploader.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'dragend', 'drop'].forEach(evt => {
+      uploader.addEventListener(evt, e => {
+        e.preventDefault();
+        uploader.classList.remove('dragover');
+      });
+    });
+
+    uploader.addEventListener('drop', e => {
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.csv')) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          data = parseCSV(ev.target.result);
+          renderCards();
+          alert(`Loaded ${data.length} items!`);
+        };
+        reader.readAsText(file);
+      }
+    });
+
     // Manual Add
     function addCard() {
       const term = document.getElementById('term').value.trim();
-      const definition = document.getElementById('definition').value.trim();
-      const language = document.getElementById('language').value.trim() || 'en';
-      if (term && definition) {
-        flashcards.push({ term, definition, language });
-        renderFlashcards();
+      const def = document.getElementById('definition').value.trim();
+      const lang = document.getElementById('language').value.trim() || 'en';
+      if (term && def) {
+        data.push({ term, definition: def, language: lang });
+        renderCards();
         document.getElementById('term').value = '';
         document.getElementById('definition').value = '';
         document.getElementById('language').value = '';
       }
     }
-   <div style="text-align:center; margin:1rem 0;">
-  <label><strong>Upload Logo (optional)</strong></label><br>
-  <input type="file" id="logo" accept="image/*">
-</div>
 
-    // Render Cards
-    function renderFlashcards() {
+    // Render
+    function renderCards() {
       const container = document.getElementById('flashcards');
       container.innerHTML = '';
-      flashcards.forEach((card, index) => {
+      data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `
-          <h3>${card.term}</h3>
-          <p><strong>${card.definition}</strong></p>
-          <small>Language: ${card.language}</small>
+          ${logoUrl ? `<img src="${logoUrl}" style="max-height:40px; margin-bottom:12px; border-radius:8px;">` : ''}
+          <h3>${item.term}</h3>
+          <p>${item.definition}</p>
+          <small>${item.language.toUpperCase()}</small>
         `;
         container.appendChild(div);
       });
-      document.getElementById('download').style.display = flashcards.length > 0 ? 'block' : 'none';
+      document.getElementById('download').style.display = data.length > 0 ? 'block' : 'none';
     }
 
-    // Generate PDF
+    // PDF Generation
     async function generatePDF() {
-      if (flashcards.length === 0) return alert('Add some cards first!');
-      const canvas = await html2canvas(document.getElementById('flashcards'), {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
+      if (data.length === 0) return alert('Add data first!');
+      const container = document.getElementById('flashcards');
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
       const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
-      const imgWidth = 210;
-      const pageHeight = 295;
+      const imgWidth = 190;
+      const pageHeight = 277;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
-      let position = 0;
+      let position = 10;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
       while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+        position = heightLeft - imgHeight + 10;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save('flashcards.pdf');
+      pdf.save('branded-output.pdf');
     }
 
-    function downloadPDF() {
-      generatePDF();
+    // Dark Mode (toggle later)
+    function toggleDarkMode() {
+      alert('Dark mode coming soon!');
     }
   </script>
-
-  <!-- jsPDF for PDF generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-          </main>
-    <footer>
-      Built by Kelly Kroeper • <a href="https://portfoliov2-brown-seven.vercel.app" style="color:var(--primary);text-decoration:none;">View Portfolio →</a>
-    </footer>
-  </div>
 </body>
 </html>
