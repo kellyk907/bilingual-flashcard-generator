@@ -350,115 +350,120 @@
     </footer>
   </div>
 
-  <script>
-    let data = [];
-    let logoUrl = null;
+<script>
+  let data = [];
+  let logoUrl = null;
 
-    function parseCSV(text) {
-      const rows = text.split('\n').slice(1).filter(r => r.trim());
-      return rows.map(r => {
-        const parts = r.split(',');
-        const term = parts[0]?.trim() || '';
-        const def = parts[1]?.trim() || '';
-        const lang = parts[2]?.trim() || 'en';
-        return { term, definition: def, language: lang };
-      }).filter(d => d.term && d.definition);
-    }
+  function parseCSV(text) {
+    const rows = text.split('\n').slice(1).filter(r => r.trim());
+    return rows.map(r => {
+      const parts = r.split(',');
+      const term = parts[0]?.trim() || '';
+      const def = parts[1]?.trim() || '';
+      const lang = parts[2]?.trim() || 'en'; // Default 'en' if no language column
+      return { term, definition: def, language: lang };
+    }).filter(d => d.term && d.definition);
+  }
 
-    const uploader = document.getElementById('uploader');
-    const csvFile = document.getElementById('csvFile');
-    const logoInput = document.getElementById('logo');
-    const logoPreview = document.getElementById('logoPreview');
+  const uploader = document.getElementById('uploader');
+  const csvFile = document.getElementById('csvFile');
+  const logoInput = document.getElementById('logo');
+  const logoPreview = document.getElementById('logoPreview');
 
-    csvFile.addEventListener('change', e => handleFile(e, 'csv'));
-    logoInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          logoUrl = ev.target.result;
-          logoPreview.src = logoUrl;
-          logoPreview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    function handleFile(e, type) {
-      const file = e.target.files[0];
-      if (!file) return;
+  csvFile.addEventListener('change', e => handleFile(e, 'csv'));
+  logoInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
       const reader = new FileReader();
       reader.onload = ev => {
-        if (type === 'csv') {
-          data = parseCSV(ev.target.result);
-          renderCards();
-          alert('Loaded ' + data.length + ' items!');
-        }
+        logoUrl = ev.target.result;
+        logoPreview.src = logoUrl;
+        logoPreview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  function handleFile(e, type) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      if (type === 'csv') {
+        data = parseCSV(ev.target.result);
+        renderCards();
+        alert('Loaded ' + data.length + ' items!');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // Drag & Drop
+  ['dragover', 'dragenter'].forEach(evt => {
+    uploader.addEventListener(evt, e => {
+      e.preventDefault();
+      uploader.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'dragend', 'drop'].forEach(evt => {
+    uploader.addEventListener(evt, e => {
+      e.preventDefault();
+      uploader.classList.remove('dragover');
+    });
+  });
+
+  uploader.addEventListener('drop', e => {
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        data = parseCSV(ev.target.result);
+        renderCards();
+        alert('Loaded ' + data.length + ' items!');
       };
       reader.readAsText(file);
     }
+  });
 
-    ['dragover', 'dragenter'].forEach(evt => {
-      uploader.addEventListener(evt, e => {
-        e.preventDefault();
-        uploader.classList.add('dragover');
-      });
-    });
-
-    ['dragleave', 'dragend', 'drop'].forEach(evt => {
-      uploader.addEventListener(evt, e => {
-        e.preventDefault();
-        uploader.classList.remove('dragover');
-      });
-    });
-
-    uploader.addEventListener('drop', e => {
-      const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.csv')) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          data = parseCSV(ev.target.result);
-          renderCards();
-          alert('Loaded ' + data.length + ' items!');
-        };
-        reader.readAsText(file);
-      }
-    });
-
-    function addCard() {
-      const term = document.getElementById('term').value.trim();
-      const def = document.getElementById('definition').value.trim();
-      const lang = document.getElementById('language').value.trim() || 'en';
-      if (term && def) {
-        data.push({ term, definition: def, language: lang });
-        renderCards();
-        document.getElementById('term').value = '';
-        document.getElementById('definition').value = '';
-        document.getElementById('language').value = '';
-      }
+  function addCard() {
+    const term = document.getElementById('term').value.trim();
+    const def = document.getElementById('definition').value.trim();
+    const lang = document.getElementById('language').value.trim() || 'en';
+    if (term && def) {
+      data.push({ term, definition: def, language: lang });
+      renderCards();
+      document.getElementById('term').value = '';
+      document.getElementById('definition').value = '';
+      document.getElementById('language').value = '';
     }
+  }
 
-    function renderCards() {
-      const container = document.getElementById('flashcards');
-      container.innerHTML = '';
-      data.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        let logoHtml = '';
-        if (logoUrl) {
-          logoHtml = '<img src="' + logoUrl + '" alt="Logo" style="max-height:40px; margin-bottom:12px; border-radius:8px;">';
-        }
-        div.innerHTML = logoHtml +
-          '<h3>' + item.term + '</h3>' +
-          '<p>' + item.definition + '</p>' +
-          '<small>' + item.language.toUpperCase() + '</small>';
-        container.appendChild(div);
-      });
-      document.getElementById('download').style.display = data.length > 0 ? 'block' : 'none';
+  function renderCards() {
+    const container = document.getElementById('flashcards');
+    container.innerHTML = '';
+    data.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      let logoHtml = '';
+      if (logoUrl) {
+        logoHtml = '<img src="' + logoUrl + '" alt="Logo" style="max-height:40px; margin-bottom:12px; border-radius:8px;">';
+      }
+      div.innerHTML = logoHtml +
+        '<h3>' + item.term + '</h3>' +
+        '<p>' + item.definition + '</p>' +
+        '<small>' + item.language.toUpperCase() + '</small>';
+      container.appendChild(div);
+    });
+    document.getElementById('download').style.display = data.length > 0 ? 'block' : 'none';
+  }
+
+  async function generatePDF() {
+    if (data.length === 0) {
+      alert('Add data first!');
+      return;
     }
-
-    async function generatePDF() {
-      if (data.length === 0) return alert('Add data first!');
+    try {
       const container = document.getElementById('flashcards');
       const canvas = await html2canvas(container, { scale: 2, useCORS: true });
       const imgData = canvas.toDataURL('image/png');
@@ -481,7 +486,88 @@
       }
 
       pdf.save('branded-output.pdf');
+      alert('PDF generated! Downloaded as branded-output.pdf');
+    } catch (error) {
+      console.error('PDF error:', error);
+      alert('PDF failed: ' + error.message + '. Check console.');
     }
-  </script>
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>CSV to Branded PDF Engine</h1>
+      <p>Upload data. Generate client-ready, print-optimized PDFs with your logo and branding — in seconds.</p>
+    </header>
+
+    <main>
+      <div class="uploader" id="uploader">
+        <p>Drop your CSV here</p>
+        <input type="file" id="csvFile" accept=".csv">
+        <small>Columns: term, definition, language (optional)</small>
+      </div>
+
+      <div class="logo-upload">
+        <label>Upload Your Logo (optional)</label>
+        <input type="file" id="logo" accept="image/*">
+  <div style="text-align:center; margin:1rem 0;">
+  <label><strong>Auto-Translate</strong></label><br>
+  <select id="sourceLang" style="padding:0.5rem; margin:0.5rem;">
+    <option value="en">English</option>
+    <option value="es">Spanish</option>
+    <option value="fr">French</option>
+  </select>
+  <select id="targetLang" style="padding:0.5rem; margin:0.5rem;">
+    <option value="es">To Spanish</option>
+    <option value="en">To English</option>
+    <option value="fr">To French</option>
+  </select>
+  <button onclick="translateAll()">Translate All</button>
+</div>
+        <img id="logoPreview" class="logo-preview" alt="Logo preview">
+      </div>
+
+      <div class="manual">
+        <input type="text" id="term" placeholder="Term">
+        <input type="text" id="definition" placeholder="Definition">
+        <input type="text" id="language" placeholder="Language (e.g. es)" size="10">
+        <br>
+        <button onclick="addCard()">Add Item</button>
+        <button onclick="generatePDF()">Generate PDF</button>
+      </div>
+
+      <div id="flashcards"></div>
+  async function translateText(text, source, target) {
+  if (source === target) return text;
+  try {
+    const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`);
+    const data = await response.json();
+    return data[0][0][0];
+  } catch (error) {
+    console.error('Translate error:', error);
+    return text; // Fallback
+  }
+}
+
+async function translateAll() {
+  const source = document.getElementById('sourceLang').value;
+  const target = document.getElementById('targetLang').value;
+  for (let item of data) {
+    item.definition = await translateText(item.definition, source, target);
+    item.language = target;
+  }
+  renderCards();
+  alert('Translated ' + data.length + ' items!');
+}
+      <button id="download" onclick="generatePDF()" style="display:none;">Download PDF</button>
+    </main>
+
+    <footer>
+      Built by Kelly Kroeper • <a href="https://portfoliov2-brown-seven.vercel.app" style="color:var(--primary);text-decoration:none;">View Portfolio</a>
+    </footer>
+  </div>
+</body>
+</html>
 </body>
 </html>
