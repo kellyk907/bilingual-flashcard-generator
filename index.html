@@ -196,146 +196,66 @@
       Built by Kelly Kroeper • <a href="https://portfoliov2-brown-seven.vercel.app" style="color:var(--primary);">View Portfolio</a>
     </footer>
   </div>
+<script>
+  let data = [];
+  let logoUrl = null;
 
-  <script>
-    let data = [];
-    let logoUrl = null;
+  // Parse CSV
+  function parseCSV(text) {
+    const rows = text.split('\n').slice(1).filter(r => r.trim());
+    return rows.map(r => {
+      const parts = r.split(',');
+      return {
+        term: parts[0]?.trim() || '',
+        definition: parts[1]?.trim() || '',
+        language: parts[2]?.trim() || 'en'
+      };
+    }).filter(d => d.term && d.definition);
+  }
 
-    // Parse CSV
-    function parseCSV(text) {
-      const rows = text.split('\n').slice(1).filter(r => r.trim());
-      return rows.map(r => {
-        const parts = r.split(',');
-        return {
-          term: parts[0]?.trim() || '',
-          definition: parts[1]?.trim() || '',
-          language: parts[2]?.trim() || 'en'
-        };
-      }).filter(d => d.term && d.definition);
-    }
-
-    // CSV Upload
-    document.getElementById('csvFile').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          data = parseCSV(ev.target.result);
-          renderCards();
-          alert(`Loaded ${data.length} items!`);
-        };
-        reader.readAsText(file);
-      }
-    });
-
-    // Logo Upload
-    document.getElementById('logo').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          logoUrl = ev.target.result;
-          document.getElementById('logoPreview').src = logoUrl;
-          document.getElementById('logoPreview').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Drag & Drop
-    const uploader = document.getElementById('uploader');
-    uploader.addEventListener('dragover', e => e.preventDefault());
-    uploader.addEventListener('drop', e => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.csv')) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          data = parseCSV(ev.target.result);
-          renderCards();
-          alert(`Loaded ${data.length} items!`);
-        };
-        reader.readAsText(file);
-      }
-    });
-
-    // Add Card
-    function addCard() {
-      const term = document.getElementById('term').value.trim();
-      const def = document.getElementById('definition').value.trim();
-      const lang = document.getElementById('language').value.trim() || 'en';
-      if (term && def) {
-        data.push({ term, definition: def, language: lang });
+  // CSV Upload
+  document.getElementById('csvFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        data = parseCSV(ev.target.result);
         renderCards();
-        document.getElementById('term').value = '';
-        document.getElementById('definition').value = '';
-        document.getElementById('language').value = '';
-      }
+        alert(`Loaded ${data.length} items!`);
+      };
+      reader.readAsText(file);
     }
+  });
 
-    // Render Cards
-    function renderCards() {
-      const container = document.getElementById('flashcards');
-      container.innerHTML = '';
-      data.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = (logoUrl ? `<img src="${logoUrl}" style="max-height:40px; margin-bottom:12px; border-radius:8px;">` : '') +
-          `<h3>${item.term}</h3><p>${item.definition}</p><small>${item.language.toUpperCase()}</small>`;
-        container.appendChild(div);
-      });
-      document.getElementById('download').style.display = data.length > 0 ? 'block' : 'none';
+  // Logo Upload — FIXED
+  document.getElementById('logo').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+      logoUrl = URL.createObjectURL(file); // Safe local URL
+      const preview = document.getElementById('logoPreview');
+      preview.src = logoUrl;
+      preview.style.display = 'block';
     }
+  });
 
-    // Auto-Translate
-    async function translateAll() {
-      const source = document.getElementById('sourceLang').value;
-      const target = document.getElementById('targetLang').value;
-      if (source === target) return alert('Select different languages!');
-      for (let item of data) {
-        try {
-          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(item.definition)}`);
-          const json = await res.json();
-          item.definition = json[0][0][0];
-          item.language = target;
-        } catch (e) {
-          // Skip errors
-        }
-      }
-      renderCards();
-      alert('Translated!');
+  // Drag & Drop
+  const uploader = document.getElementById('uploader');
+  uploader.addEventListener('dragover', e => e.preventDefault());
+  uploader.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        data = parseCSV(ev.target.result);
+        renderCards();
+        alert(`Loaded ${data.length} items!`);
+      };
+      reader.readAsText(file);
     }
+  });
 
-    // Generate PDF
-    async function generatePDF() {
-      if (data.length === 0) return alert('Add data!');
-      document.getElementById('download').textContent = 'Generating...';
-      try {
-        const container = document.getElementById('flashcards');
-        const canvas = await html2canvas(container, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 190;
-        const pageHeight = 277;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 10;
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight + 10;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        pdf.save('branded-output.pdf');
-        alert('PDF Downloaded!');
-      } catch (e) {
-        alert('PDF Error: ' + e.message);
-      }
-      document.getElementById('download').textContent = 'Download PDF';
-    }
-  </script>
+  // Add Card
+
 </body>
 </html>
