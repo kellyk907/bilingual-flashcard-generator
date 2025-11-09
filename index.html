@@ -198,7 +198,7 @@
   </div>
 <script>
   let data = [];
-  let logoFile = null; // Store file, not URL
+  let logoData = null;
 
   // Parse CSV
   function parseCSV(text) {
@@ -227,14 +227,14 @@
     }
   });
 
-  // Logo Upload — Store file
+  // Logo Upload
   document.getElementById('logo').addEventListener('change', e => {
     const file = e.target.files[0];
     if (file) {
-      logoFile = file;
       const reader = new FileReader();
       reader.onload = ev => {
-        document.getElementById('logoPreview').src = ev.target.result;
+        logoData = ev.target.result;
+        document.getElementById('logoPreview').src = logoData;
         document.getElementById('logoPreview').style.display = 'block';
       };
       reader.readAsDataURL(file);
@@ -272,7 +272,7 @@
     }
   }
 
-  // Render Cards (NO LOGO IN HTML)
+  // Render Cards (UI Only)
   function renderCards() {
     const container = document.getElementById('flashcards');
     container.innerHTML = '';
@@ -309,70 +309,70 @@
     alert('Translated!');
   }
 
-  // Generate PDF — FINAL FIX
-  async function generatePDF() {
+  // Generate PDF — CARD-BY-CARD (NO CANVAS CORRUPTION)
+  function generatePDF() {
     if (data.length === 0) return alert('Add data first!');
     const btn = document.getElementById('download');
     btn.textContent = 'Generating PDF...';
     btn.disabled = true;
 
     try {
-      const container = document.getElementById('flashcards');
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#1a1a2e'
-      });
-
-      const imgData = canvas.toDataURL('image/png');
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 10;
-      const contentWidth = pageWidth - 2 * margin;
-      const contentHeight = pageHeight - 2 * margin;
+      const margin = 15;
+      const cardWidth = pageWidth - 2 * margin;
+      const cardHeight = 60;
+      const cardsPerPage = 4;
+      const spacing = 8;
 
-      // Add logo at top of first page
-      if (logoFile) {
-        const logoReader = new FileReader();
-        const logoData = await new Promise(resolve => {
-          logoReader.onload = () => resolve(logoReader.result);
-          logoReader.readAsDataURL(logoFile);
-        });
-        const logoWidth = 40;
-        const logoHeight = 20;
-        pdf.addImage(logoData, 'PNG', margin, margin, logoWidth, logoHeight);
-      }
+      let y = margin;
+      let pageCount = 0;
 
-      const imgHeight = (canvas.height * contentWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = logoFile ? margin + 25 : margin;
-
-      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeight);
-      heightLeft -= contentHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight + margin;
-        pdf.addPage();
-        if (logoFile) {
-          const logoReader = new FileReader();
-          const logoData = await new Promise(resolve => {
-            logoReader.onload = () => resolve(logoReader.result);
-            logoReader.readAsDataURL(logoFile);
-          });
-          pdf.addImage(logoData, 'PNG', margin, margin, 40, 20);
+      data.forEach((item, i) => {
+        if (i > 0 && i % cardsPerPage === 0) {
+          pdf.addPage();
+          y = margin;
+          pageCount++;
+          if (logoData) {
+            pdf.addImage(logoData, 'PNG', margin, y, 30, 15);
+            y += 18;
+          }
+        } else if (i % cardsPerPage === 0 && logoData) {
+          pdf.addImage(logoData, 'PNG', margin, y, 30, 15);
+          y += 18;
         }
-        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeight);
-        heightLeft -= contentHeight;
-      }
+
+        // Card background
+        pdf.setFillColor(30, 30, 46);
+        pdf.roundedRect(margin, y, cardWidth, cardHeight, 8, 8, 'F');
+
+        // Term
+        pdf.setTextColor(245, 158, 11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(16);
+        pdf.text(item.term, margin + 10, y + 15);
+
+        // Definition
+        pdf.setTextColor(248, 250, 252);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(12);
+        const defLines = pdf.splitTextToSize(item.definition, cardWidth - 20);
+        pdf.text(defLines, margin + 10, y + 28);
+
+        // Language
+        pdf.setTextColor(148, 163, 184);
+        pdf.setFontSize(10);
+        pdf.text(item.language.toUpperCase(), margin + 10, y + cardHeight - 8);
+
+        y += cardHeight + spacing;
+      });
 
       pdf.save('branded-output.pdf');
       alert('PDF downloaded!');
     } catch (e) {
-      console.error(e);
-      alert('PDF failed. Try without logo.');
+      alert('PDF failed: ' + e.message);
     } finally {
       btn.textContent = 'Download PDF';
       btn.disabled = false;
