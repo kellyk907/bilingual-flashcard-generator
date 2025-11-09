@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bilingual Flashcard Generator</title>
+<header>
+  <h1>CSV → Branded PDF Engine</h1>
+  <p>Upload data. Download client-ready PDFs. No design team needed.</p>
+</header>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
  <style>
   @import url('https://rsms.me/inter/inter.css');
@@ -108,6 +111,10 @@
         document.getElementById('language').value = '';
       }
     }
+   <div style="text-align:center; margin:1rem 0;">
+  <label><strong>Upload Logo (optional)</strong></label><br>
+  <input type="file" id="logo" accept="image/*">
+</div>
 
     // Render Cards
     function renderFlashcards() {
